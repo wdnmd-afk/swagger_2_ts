@@ -4,18 +4,23 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm-run-all --parallel vite-dev server-dev",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "vite-dev": "vite",
+    "server-dev": "nodemon server/index.js"
   },
   "dependencies": {
     "antd": "^5.20.6",
     "axios": "^1.7.7",
     "clipboard-polyfill": "^4.1.0",
+    "concurrently": "^9.0.1",
+    "dayjs": "^1.11.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
