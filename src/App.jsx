@@ -1,8 +1,9 @@
-import {Button, Form, Input, message, Select, Table} from 'antd';
+import {Button, Form, Input, message, Select, Table,TreeSelect} from 'antd';
 import {useState, useEffect} from 'react';
 import {Http} from './util';
 import './App.css'
 import axios from "axios";
+import VueCode from "./VueCode.jsx";
 
 const App = () => {
     //模块
@@ -82,11 +83,14 @@ const App = () => {
         }
         const {data} = await Http.post('/api/merge', {
             mode: values.mode,
-            options: values.options?values.options:params
+            options: values.options ? values.options : params
         });
         setApiStr(data.data.api);
         setDtoStr(data.data.dto);
-        const res = await Http.post('/api/resource', {options: values.options?values.options:params, mode: values.mode});
+        const res = await Http.post('/api/resource', {
+            options: values.options ? values.options : params,
+            mode: values.mode
+        });
         setTableData(res.data.data)
     };
 
@@ -120,11 +124,11 @@ const App = () => {
     const [token, setToken] = useState('')
     const [pid, setPid] = useState('')
     const findItemInArray = (arr, url) => {
-    const res = []
+        const res = []
         arr.forEach((item) => {
-            if(item.options.length){
+            if (item.options.length) {
                 item.options.forEach((option) => {
-                    if(option.url.includes(url)){
+                    if (option.url.includes(url)) {
                         res.push(option)
                     }
                 })
@@ -132,6 +136,59 @@ const App = () => {
 
         })
         return res
+    }
+    const [treeData, setTreeData] = useState([])
+    const getTreeData = async ()=>{
+        axios.post('/prod-api/admin/api/v1/operation/getAllOperationTree', {resourceType:2,name:'',urlperm:''}, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            }
+        }).then(({data}) => {
+            setTreeData(data.data)
+        })
+
+    }
+    function appendSuffix(arr) {
+        let newArr = [];
+
+        arr.forEach(item => {
+            for (let i = 1; i <= 4; i++) {
+                let suffix = i.toString().padStart(2, '0');  // ensures the suffix is two digits, like "01", "02", etc.
+                newArr.push(item + suffix);
+            }
+        });
+
+        return newArr;
+    }
+    const testData = [
+          "10241206000003", "10241206000004", "10241206000005",
+        "10241206000006", "10241206000007", "10241206000008", "10241206000009", "10241206000010",
+        "10241206000011", "10241206000012", "10241206000013", "10241206000014", "10241206000015",
+        "10241206000016", "10241206000017", "10241206000018", "10241206000019", "10241206000020",
+        "10241206000021", "10241206000022", "10241206000023", "10241206000024", "10241206000025",
+        "10241206000026", "10241206000027", "10241206000028", "10241206000029", "10241206000030",
+        "10241206000031", "10241206000032", "10241206000033", "10241206000034", "10241206000035",
+        "10241206000036", "10241206000037", "10241206000038", "10241206000039", "10241206000040",
+        "10241206000041", "10241206000042", "10241206000043", "10241206000044", "10241206000045",
+        "10241206000046", "10241206000047", "10241206000048", "10241206000049", "10241206000050",
+        "10241206000051", "10241206000052", "10241206000053", "10241206000054", "10241206000055",
+        "10241206000056", "10241206000057", "10241206000058"
+    ]
+    const login = async ()=>{
+       const config =  {
+            headers: {
+                'Content-Type': 'application/json',
+                    'Authorization': token
+            }
+        }
+        const realData = appendSuffix(testData)
+        console.log(realData,'real')
+        for await (const argument of realData) {
+            const {data} = await axios.post('/prod-api/lissortting/api/v1/sortting/querySpecimenByBarcode', {barcode:argument},config)
+            console.log(data,'ddd')
+             axios.post('/prod-api/lissortting/api/v1/sortting/addSorttingByApplicationOrderidBarcode',{applicationOrderId:data.applicationOrderId,barcode:argument},config)
+        }
     }
     //批量登记
     const handleSend = async () => {
@@ -150,13 +207,16 @@ const App = () => {
     const [form] = Form.useForm();
     const handleForm = () => {
         const formData = form.getFieldsValue();
-        if(!formData.url) return
-        const options = findItemInArray(optionsPath,formData.url.trim())
+        if (!formData.url) return
+        const options = findItemInArray(optionsPath, formData.url.trim())
         console.log(options)
-        if(options.length){
-onFinish({mode:formData.mode,options})
+        if (options.length) {
+            onFinish({mode: formData.mode, options})
         }
     }
+    const onChange = (newValue) => {
+        setPid(newValue);
+    };
     return (
         <div>
             <Form
@@ -190,7 +250,8 @@ onFinish({mode:formData.mode,options})
                         options={(optionsPath || []).map(d => ({
                             value: d.tagName,
                             label: d.tagName,
-                            other: d.options
+                            other: d.options,
+                            key: d.tagName
                         }))}
                     />
                 </Form.Item>
@@ -209,6 +270,7 @@ onFinish({mode:formData.mode,options})
                     <Button type={'primary'} onClick={handleForm}>单个搜索</Button>
                 </Form.Item>
             </Form>
+            <VueCode></VueCode>
             <Button type={'primary'} onClick={handleHide}>显示隐藏</Button>
             {flag && <div className={'box'}>
                 <div className={'inner'}>
@@ -231,11 +293,30 @@ onFinish({mode:formData.mode,options})
                     </div>
                     <div className={'flexCenter'} style={{width: '300px', marginRight: '10px'}}>
                         <div style={{marginRight: '10px'}}>PID</div>
-                        <Input value={pid} onChange={(e) => {
+                       {/* <Input value={pid} onChange={(e) => {
                             setPid(e.target.value)
-                        }}></Input>
+                        }}></Input>*/}
+                        <TreeSelect
+                            showSearch
+                            style={{ width: '100%' }}
+                            value={pid}
+                            dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                            placeholder="Please select"
+                            allowClear
+                            treeDefaultExpandAll
+                            onChange={onChange}
+                            treeData={treeData}
+                            fieldNames={{
+                                label: 'name',
+                                value: 'id',
+                                children: 'children',
+                            }}
+                        />
                     </div>
-                    <div><Button onClick={handleSend}>批量登记</Button></div>
+                    <div>
+                        <Button onClick={login} type={'primary'}>登录</Button>
+                        <Button onClick={getTreeData}>获取PID树形数据</Button>
+                        <Button onClick={handleSend}>批量登记</Button></div>
                 </div>
 
                 <Table columns={columns} dataSource={tableData} key={'urlperm'}/>

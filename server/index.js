@@ -2,8 +2,10 @@ import express from 'express'
 import dayjs from "dayjs";
 import XLSX from 'xlsx';
 import path from 'path'
+import {recognizeCaptcha} from './utils.js'
 const interfaceMap = {
     'kangdulab-business-lis': 'lis',
+    'kangdulab-business-lis-report': 'lisreport',
     'kangdulab-business-docking': 'docking',
     'kangdulab-business-oss': 'oss',
     'kangdulab-log': 'log',
@@ -15,6 +17,9 @@ const interfaceMap = {
     "kangdulab-business-logistics": "logistics",
     "kangdulab-business-import-export": "importexport",
     "kangdulab-business-charge": "charge",
+    "kangdulab-business-lis-microbiology-test": "microbiologytest",
+    "kangdulab-business-lis-ngs": "lisngs",
+    "kangdulab-business-lis-pathology-test": "pathologytest",
 }
 
 /* NOTE: all fields are optional expect one of `output`, `url`, `spec` */
@@ -30,7 +35,18 @@ function extractQueryByNameDto(schema) {
     // return schema.components.schemas[ref];
     return ref
 }
-
+const loginConfig = {
+    username: 'linwenyu',
+    password: 'kd123456',
+    grant_type: 'captcha',
+    verifyCode: '9',
+    verifyCodeKey: 'f261a8f969464afaa42f2f4aea2b8b76',
+    client_id: 'kangdulab-admin',
+    client_secret: '8e343ab1e4c14dae9b46f65820396b53',
+    publicKeyId: '',
+    publicKey: '',
+}
+const loginUrl = 'http://192.168.218.202:9392/'
 const baseUrl = 'http://192.168.218.202:9392/'
 const app = express()
 app.use(express.json())
@@ -109,7 +125,8 @@ function generateDtoCode(data) {
         let interfaceCode = `interface ${key}Prop {\n`;
         Object.entries(dto || {}).forEach(([dtoKey, {type, description}]) => {
             // 判断类型，如果是integer则转换为number，否则默认为string
-            const fieldType = type === 'integer' ? 'number' : 'string';
+            let fieldType = type === 'integer' ? 'number | string' : 'string';
+            if(dtoKey.toLowerCase().includes('ids')||dtoKey.toLowerCase().includes('list')) fieldType = 'number[] | string[]'
             // 添加字段到interface，字段都是可选的
             interfaceCode += `    ${dtoKey}?: ${fieldType} // ${description || ''}\n`;
         });
@@ -124,6 +141,193 @@ function generateDtoCode(data) {
 
     return dtoInterfaces;
 }
+
+function generateVueCode(data){
+    const {options,mode} = data;
+    console.log(options,mode,'ssss')
+}
+//解析图片验证码
+app.post('/login', async (req, res) => {
+     const response = await fetch(`${loginUrl}auth/captcha/login/code`, {
+        method: 'GET',
+    });
+    const {data} = await response.json();
+    const verifyCode = await recognizeCaptcha(data.verifyCodeImg)
+    // console.log(data, 'ddd',verifyCode);
+   res.json({
+       code: 200,
+       data: {
+           verifyCode,
+           ...data
+       }
+   })
+})
+app.post('/vuecode',(req, res)=>{
+    const {refreshApi,addDto,addApi,updateApi,delApi,delDto,pageApi,pageDto,queryApi,queryDto} = req.body;
+    const HtmlCode = `
+    <template>
+    <div wh-full flex-col px-10>
+        <div bg-white class="px-[12px] py-[12px]">
+            <n-grid x-gap="15" y-gap="5" cols="3 1000:4 1500:5 1700:6" class="mb-[8px]">
+                <n-gi>
+                    <KDInput text="a" v-model="queryParams.a" clearable />
+                </n-gi>
+
+                <n-gi>
+                    <KDInput text="b" v-model="queryParams.b" clearable />
+                </n-gi>
+                <n-gi>
+                    <KDInput text="c" v-model="queryParams.c" clearable />
+                </n-gi>
+                <n-gi :span="2">
+                    <KDTimePicker text="创建时间" class="flex-1" @getTimer="getTimer" />
+                </n-gi>
+                <n-gi :span="1">
+                    <n-button type="primary" size="small" @click="initPage">查询</n-button>
+                    <n-button class="ml-5" type="warning" size="small" @click="emptyQuery">清空查询</n-button>
+                    <n-button class="ml-5" type="success" size="small" @click="handleAdd">新增</n-button>
+                     ${refreshApi?'<n-button class="ml-5" type="info" size="small" @click="refresh">刷新緩存</n-button>':''}
+                </n-gi>
+            </n-grid>
+        </div>
+
+        <div flex-1 flex-col h0 mt-5 bg-white>
+            <div flex-1 h0>
+                <VTable :is-show-check="true" :data="tableData" :columns="columns" height="auto" :is-operate="true">
+                  <template #operate="{ row }">
+                    <KDDropdown :row="row" @optionClick="operate" :options="options"></KDDropdown>
+                  </template>
+                </VTable>
+            </div>
+            <KDPagination v-model="queryParams.page" :total="totalValue" :limit="queryParams.limit" @change="changePage"> </KDPagination>
+        </div>
+        <KDModal width="500px" v-model="visible" title="添加项目">
+            <div p12>
+                <n-grid cols="1" y-gap="12" x-gap="15">
+                    <n-gi>
+                        <KDInput
+                            v-model="addForm.a"
+                            text-class="textBlack"
+                            text="申请项目"
+                        ></KDInput>
+                    </n-gi>
+                    <n-gi>
+                        <KDInput type="textarea" text="备注" text-class="textBlack" v-model="addForm.remark" clearable />
+                    </n-gi>
+                </n-grid>
+            </div>
+            <div flex items-center justify-end p10>
+                <n-button size="small" @click="cancel">取消</n-button>
+                <n-button class="ml-5" type="primary" size="small" @click="sure">确定</n-button>
+            </div>
+        </KDModal>
+    </div>
+</template>
+    `
+
+    const imports = `
+    <script setup lang="ts">
+import { Api } from './api'
+import { ${addDto}, ${pageDto} } from './dto'
+import VTable from '/&/components/VTable/index.vue'
+import { VTableProps } from '/&/components/VTable/VTable'
+import { MessageBox,getArrayFirst, getArrayLast, useCurrentInstance } from '/&/utils'
+import KDSelect from '/&/components/KDSelect/index.vue'
+import { PublicApi } from '@/api'
+import KDDropdown from "/&/components/KDDropdown/index.vue";
+//--------------------------编辑 ------------------------
+const operate = ({ key, row }: any) => {
+  key === 'edit' ? handleEdit(row) : handleDelete(row)
+}
+const handleEdit = async (row:any)=>{
+      ${queryApi?`const data = await Api.${queryApi}({ id: row.id })`:''}
+      visible.value = true
+       addForm.value = ${queryApi?'data':'row'}
+}
+const handleDelete = (row:any)=>{
+         MessageBox.confirm('确定要删除吗',()=>{
+    Api.${delApi}({id:row.id}).then(()=>{
+      window.$message.success('删除成功')
+      initPage()
+    })
+  })
+}
+//--------------------------新增 ------------------------
+const visible = ref(false)
+const addForm = ref<${addDto}>({})
+const handleAdd = () => {
+    visible.value = true
+}
+
+const cancel = () => {
+    addForm.value = {}
+    visible.value = false
+}
+const sure = async () => {
+    const fn = addForm.value.id?Api.${updateApi}: Api.${addApi}
+  await fn(addForm.value)
+  window.$message.success('操作成功')
+  cancel()
+  await initPage()
+}
+//--------------------查询 -----------------------
+const queryParams = ref<${pageDto}>({ page: 1, limit: 50 })
+const totalValue = ref(0)
+const tableData = ref<any[]>([])
+const columns: VTableProps.TableColumnPropsArray = [
+    {
+        title: '康都条码号',
+        key: 'barcode',
+    },
+     {
+    title: '备注',
+    key: 'remark',
+  },
+  {
+    title: '修改时间',
+    key: 'gmtModified',
+  },
+  {
+    title: '修改人',
+    key: 'lastupdatename',
+  },
+  {
+    title: '创建时间',
+    key: 'gmtCreate',
+  },
+  {
+    title: '创建人',
+    key: 'createdname',
+  },
+]
+const changePage = (e: PaginationChangeProp) => {
+    const { type, value } = e
+    queryParams.value[type] = value
+    initPage()
+}
+const getTimer = (data: string[]) => {
+    queryParams.value.beginCreateTime = getArrayFirst(data)
+    queryParams.value.endCreateTime = getArrayLast(data)
+    initPage()
+}
+const { proxy } = useCurrentInstance()
+const emptyQuery = () => {
+    //清空查询
+    proxy.eventBus.emit('onTabViewRefresh')
+}
+const initPage = async () => {
+    const { data, total } = (await Api.${pageApi}(queryParams.value)) as any
+    totalValue.value = total
+    tableData.value = data
+}
+onMounted(()=>{
+  // initPage()
+})
+</script>
+    `
+const completeCode = HtmlCode +'\n' + imports
+    res.json({code:200,data:completeCode})
+})
 
 app.post('/docs', async (req, res) => {
     const body = req.body
@@ -222,6 +426,7 @@ app.post('/merge', async (req, res) => {
 
     const api = generateApiCode(req.body)
     const dto = generateDtoCode(req.body)
+    const vueCode = generateVueCode(req.body)
     res.json({
         data: {api, dto},
         code: 200

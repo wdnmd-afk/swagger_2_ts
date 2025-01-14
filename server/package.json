@@ -12,6 +12,9 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.21.0",
-    "swagger-typescript-api": "^13.0.22"
+    "jimp": "^1.6.0",
+    "node-cache": "^5.1.2",
+    "swagger-typescript-api": "^13.0.22",
+    "tesseract.js": "^5.1.1"
   }
 }

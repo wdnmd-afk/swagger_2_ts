@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .bb{
+            width: 50vw;
+            height: 100vh;
+            display: flex;
+        
+            flex-wrap: wrap;
+        }
+        .bbb{
+            width: 33%;
+            height: 300px;
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+<div class="bb">
+    <div class="bbb"></div>
+    <div class="bbb"></div>
+    <div class="bbb"></div>
+    <div class="bbb"></div>
+    <div class="bbb"></div>
+</div>
+</body>
+</html>
