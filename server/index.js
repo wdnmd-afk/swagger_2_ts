@@ -20,6 +20,9 @@ const interfaceMap = {
     "kangdulab-business-lis-microbiology-test": "microbiologytest",
     "kangdulab-business-lis-ngs": "lisngs",
     "kangdulab-business-lis-pathology-test": "pathologytest",
+    "kangdulab-business-canteen": "canteen",
+    "kangdd-business-health": "health",
+
 }
 
 /* NOTE: all fields are optional expect one of `output`, `url`, `spec` */
@@ -47,7 +50,7 @@ const loginConfig = {
     publicKey: '',
 }
 const loginUrl = 'http://192.168.218.202:9392/'
-const baseUrl = 'http://192.168.218.202:9392/'
+const baseUrl = 'http://192.168.218.203:9392/'
 const app = express()
 app.use(express.json())
 app.get('/list', async (req, res) => {
@@ -96,7 +99,7 @@ function generateApiCode(data) {
         }
         console.log(mode)
         classCode += `    //${summary}
-    public static ${functionName}(param: ${functionParam}): AxiosPromise {
+    public static ${functionName}(param: ${functionParam}) {
         return Http.${method}('${(interfaceMap[mode] || mode)}${url}', param)
     }\n`;
     });
@@ -107,7 +110,7 @@ function generateApiCode(data) {
     if (imports.size > 0) {
         apiCode += `import { ${Array.from(imports).join(', ')} } from './dto'\n`;
     }
-    apiCode += `import { Http } from '/&/utils'\nimport { AxiosPromise } from 'axios'\n\n`;
+    apiCode += `import { Http } from '/&/utils'\n\n\n`;
     apiCode += classCode;
 
     return apiCode;
@@ -186,7 +189,7 @@ app.post('/vuecode',(req, res)=>{
                     <n-button type="primary" size="small" @click="initPage">查询</n-button>
                     <n-button class="ml-5" type="warning" size="small" @click="emptyQuery">清空查询</n-button>
                     <n-button class="ml-5" type="success" size="small" @click="handleAdd">新增</n-button>
-                     ${refreshApi?'<n-button class="ml-5" type="info" size="small" @click="refresh">刷新緩存</n-button>':''}
+                     ${refreshApi?'<n-button class="ml-5" type="info" size="small" @click="refreshCache">刷新緩存</n-button>':''}
                 </n-gi>
             </n-grid>
         </div>
@@ -235,12 +238,13 @@ import { MessageBox,getArrayFirst, getArrayLast, useCurrentInstance } from '/&/u
 import KDSelect from '/&/components/KDSelect/index.vue'
 import { PublicApi } from '@/api'
 import KDDropdown from "/&/components/KDDropdown/index.vue";
+${refreshApi?`const refreshCache = ()=>{\n  Api.${refreshApi}().then(()=>{\n    window.$message.success(\'刷新缓存成功\')\n  })\n}`:''}
 //--------------------------编辑 ------------------------
 const operate = ({ key, row }: any) => {
   key === 'edit' ? handleEdit(row) : handleDelete(row)
 }
 const handleEdit = async (row:any)=>{
-      ${queryApi?`const data = await Api.${queryApi}({ id: row.id })`:''}
+      ${queryApi?`const {data} = await Api.${queryApi}({ id: row.id })`:''}
       visible.value = true
        addForm.value = ${queryApi?'data':'row'}
 }
@@ -483,7 +487,7 @@ app.post('/resource', async (req, res) => {
             remark:'',
             sort:'',
             urlperm:method.toUpperCase()+':/'+interfaceMap[mode]+url,
-            btnperm:'1234',
+            btnperm:'1',
             operationType:2,
             operation_componet:'',
             resourceType:1,
@@ -493,4 +497,4 @@ app.post('/resource', async (req, res) => {
     res.json({data,code:200})
 })
 
-app.listen(3000)
+app.listen(3008)

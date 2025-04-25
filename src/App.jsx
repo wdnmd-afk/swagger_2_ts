@@ -1,5 +1,5 @@
-import {Button, Form, Input, message, Select, Table,TreeSelect} from 'antd';
-import {useState, useEffect} from 'react';
+import {Button, Form, Input, message, Select, Switch, Table, TreeSelect} from 'antd';
+import {useEffect, useState} from 'react';
 import {Http} from './util';
 import './App.css'
 import axios from "axios";
@@ -14,6 +14,9 @@ const App = () => {
     const [apiStr, setApiStr] = useState('');
     const [dtoStr, setDtoStr] = useState('');
     const [tableData, setTableData] = useState([]);
+    const [isChecked, setIsChecked] = useState(false);
+    const [isGive, setGive] = useState(false);
+    const [baseUrl, setBaseUrl] = useState('/prod-api');
     const handleDelete = (row) => {
         console.log(row)
         setTableData(tableData.filter(item => item.urlperm !== row.urlperm))
@@ -73,6 +76,11 @@ const App = () => {
             const {data} = await Http.get('/api/list');
             setModeOptions(data.data.urls);
         };
+        const token = localStorage.getItem('token')
+        if(token){
+            setToken(token)
+        }
+
         initPage();
     }, []);
 
@@ -117,6 +125,15 @@ const App = () => {
         return optionsPath.filter(d => d.tagName.includes(newVal)) || [];
 
     }
+    useEffect(() => {
+        console.log(optionsPath)
+    }, [optionsPath]);
+    const roleFilter = (newVal) => {
+        return roleData.filter((d)=>{
+            return d.name.includes(newVal)
+        });
+
+    }
     const [flag, setFlag] = useState(true)
     const handleHide = () => {
         setFlag(!flag)
@@ -137,17 +154,20 @@ const App = () => {
         })
         return res
     }
+    const [roleData, setRoleData] = useState([])
     const [treeData, setTreeData] = useState([])
     const getTreeData = async ()=>{
-        axios.post('/prod-api/admin/api/v1/operation/getAllOperationTree', {resourceType:2,name:'',urlperm:''}, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token
-            }
-        }).then(({data}) => {
-            setTreeData(data.data)
-        })
+        Http.post(baseUrl+'/admin/api/v1/operation/getAllOperationTree', {resourceType:2,name:'',urlperm:''}, {
 
+        }).then(({data}) => {
+            console.log(data,'ddd')
+            setTreeData(data)
+        })
+        Http.post(baseUrl+'/admin/api/v1/role/queryRolePageList', {limit:200,page:1}, {
+
+        }).then(({data}) => {
+            setRoleData(data)
+        })
     }
     function appendSuffix(arr) {
         let newArr = [];
@@ -185,21 +205,41 @@ const App = () => {
         const realData = appendSuffix(testData)
         console.log(realData,'real')
         for await (const argument of realData) {
-            const {data} = await axios.post('/prod-api/lissortting/api/v1/sortting/querySpecimenByBarcode', {barcode:argument},config)
+            const {data} = await axios.post(baseUrl+'/lissortting/api/v1/sortting/querySpecimenByBarcode', {barcode:argument},config)
             console.log(data,'ddd')
-             axios.post('/prod-api/lissortting/api/v1/sortting/addSorttingByApplicationOrderidBarcode',{applicationOrderId:data.applicationOrderId,barcode:argument},config)
+             axios.post(baseUrl+'/lissortting/api/v1/sortting/addSorttingByApplicationOrderidBarcode',{applicationOrderId:data.applicationOrderId,barcode:argument},config)
         }
     }
+    const [roleId,setRoleId] = useState('')
     //批量登记
     const handleSend = async () => {
         tableData.forEach((item) => {
-            axios.post('/prod-api/admin/api/v1/operation/addOperation', {...item, pid}, {
+            Http.post(baseUrl+'/admin/api/v1/operation/addOperation', {...item, pid}, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': token
                 }
             }).then((res) => {
-                message.success(item.urlperm + res.data.msg)
+                console.log(res,item)
+                message.success(item.urlperm + (res?.msg?res?.msg:res.data.msg))
+                if(!roleId) return
+               if(!res?.msg.includes('重复')){
+                   Http.post(baseUrl+'/admin/api/v1/operation/queryAllOperationPageList', {page:1,limit:10,urlperm:item.urlperm,roleId}, {
+                       headers: {
+                           'Content-Type': 'application/json',
+                           'Authorization': token
+                       }
+                   }).then(({data})=>{
+                       const addoperationids = data.map(item=>item.id)
+                       Http.post(baseUrl+'/admin/api/v1/operation/creatRoleOperationList', {addoperationids,roleid:roleId}, {
+                           headers: {
+                               'Content-Type': 'application/json',
+                               'Authorization': token
+                           }
+                       })
+                   })
+               }
+
             })
         })
     }
@@ -217,6 +257,21 @@ const App = () => {
     const onChange = (newValue) => {
         setPid(newValue);
     };
+    const handleRoleChange = (data)=>{
+        console.log(data,'ddd')
+        setRoleId(data)
+    }
+    useEffect(()=>{
+        console.log(isChecked,'check')
+        if(isChecked){
+            localStorage.setItem('isHttps','1')
+            setBaseUrl('/https-api')
+        }else {
+            setBaseUrl('/prod-api')
+            localStorage.removeItem('isHttps')
+
+        }
+    },[isChecked])
     return (
         <div>
             <Form
@@ -314,7 +369,26 @@ const App = () => {
                         />
                     </div>
                     <div>
-                        <Button onClick={login} type={'primary'}>登录</Button>
+                        <Select
+                            size="large"
+                            showSearch
+                            placeholder='选择角色'
+                            onSearch={roleFilter}
+                            allowClear={true}
+                            style={{width:200}}
+                            onChange={handleRoleChange}
+                            options={(roleData || []).map(d => ({
+                                value: d.id,
+                                label: d.name,
+
+                                key: d.id
+                            }))}
+                        />
+                    </div>
+                    <div>
+                        {/*<Button onClick={login} type={'primary'}>登录</Button>*/}
+                        <span style={{marginRight:10}}>是否HTTPS</span>
+                        <Switch checked={isChecked} onChange={(e)=>setIsChecked(e)} ></Switch>
                         <Button onClick={getTreeData}>获取PID树形数据</Button>
                         <Button onClick={handleSend}>批量登记</Button></div>
                 </div>
