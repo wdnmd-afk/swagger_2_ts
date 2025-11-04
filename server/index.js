@@ -22,6 +22,9 @@ const interfaceMap = {
     "kangdulab-business-lis-pathology-test": "pathologytest",
     "kangdulab-business-canteen": "canteen",
     "kangdd-business-health": "health",
+    "kangdd-business-3pl": "3pl",
+    "kangdd-business-survey": "survey",
+    "kangdulab-business-lis-qc": "lisqc",
 
 }
 

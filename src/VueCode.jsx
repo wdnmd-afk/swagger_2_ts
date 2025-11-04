@@ -15,9 +15,12 @@ const VueCode = () => {
     }
     return (
         <>
-            <div>
-                <Button onClick={() => setVisible(!visible)}>填写Vue表单</Button>
+            {/* 中文注释：表单控制按钮 */}
+            <div style={{marginBottom: 12}}>
+                <Button onClick={() => setVisible(!visible)}>填写/收起 Vue 表单</Button>
             </div>
+
+            {/* 中文注释：Vue 表单区域，保持原有字段，仅包装样式 */}
             {visible && <div>
                 <Form labelCol={{span: 8}}
                       wrapperCol={{span: 16}} onFinish={generateCode}>
@@ -77,7 +80,7 @@ const VueCode = () => {
                         </Col>
                         <Col span={12}>
                             <Form.Item label="提交">
-                                <Button htmlType={'submit'}>生成Vue代码</Button>
+                                <Button htmlType={'submit'} type='primary'>生成Vue代码</Button>
                             </Form.Item>
                         </Col>
                     </Row>
@@ -85,8 +88,9 @@ const VueCode = () => {
 
                 </Form>
             </div>}
+            {/* 中文注释：生成的 Vue 代码展示区域 */}
             {
-                textVisible && <div>
+                textVisible && <div style={{marginTop: 12}}>
                     <Input.TextArea value={info} rows={30}></Input.TextArea>
                 </div>
             }

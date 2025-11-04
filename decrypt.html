@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES加密解密工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            height: 40px; /* 与选择框高度一致 */
+            vertical-align: middle;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .key-selector button {
+            margin-right: 0; /* 在key-selector中使用gap */
+            margin-bottom: 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .key-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .key-selector {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .key-selector label {
+            margin-bottom: 0;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+        .key-selector select {
+            width: auto;
+            min-width: 300px;
+            margin-right: 0; /* 使用gap代替margin */
+            height: 40px; /* 与按钮高度一致 */
+            vertical-align: middle;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0 10px;
+            font-size: 14px;
+            background-color: white;
+            box-sizing: border-box;
+        }
+        .custom-key-input {
+            margin-top: 10px;
+            display: none;
+        }
+        .json-display {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .json-key {
+            color: #d73a49;
+            font-weight: bold;
+        }
+        .json-string {
+            color: #032f62;
+        }
+        .json-number {
+            color: #005cc5;
+        }
+        .json-boolean {
+            color: #e36209;
+        }
+        .json-null {
+            color: #6f42c1;
+        }
+        .copy-btn {
+            background-color: #28a745;
+            font-size: 12px;
+            padding: 5px 10px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+        .result-section {
+            margin: 15px 0;
+        }
+        .result-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            display: block;
+        }
+        .key-display {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #e9ecef;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #495057;
+        }
+        .json-formatted {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 AES加密解密工具</h1>
+
+        <!-- 密钥选择区域 -->
+        <div class="section">
+            <h2>🔑 密钥配置</h2>
+            <div class="key-selector">
+                <label for="keySelect">选择AES密钥：</label>
+                <select id="keySelect" onchange="handleKeyChange()">
+                    <option value="health">小程序端密钥 (当前项目)</option>
+                    <option value="test">Web端密钥</option>
+                    <option value="custom">自定义密钥</option>
+                </select>
+                <button onclick="testCurrentKey()">测试密钥</button>
+            </div>
+            <div class="custom-key-input" id="customKeyInput">
+                <label for="customKey">自定义密钥：</label>
+                <input type="text" id="customKey" placeholder="请输入32位AES密钥" maxlength="32">
+            </div>
+            <div class="key-info" id="keyInfo">
+                <strong>当前使用的AES密钥：</strong> <span id="currentKey">1b9ovDYH4Inl1N7fOcTBuigPOZ8JIwBv</span><br>
+                <strong>加密模式：</strong> AES-ECB + PKCS7填充<br>
+                <strong>密钥长度：</strong> <span id="keyLength">32</span> 字符
+            </div>
+        </div>
+
+        <!-- 解密区域 -->
+        <div class="section">
+            <h2>🔓 解密功能</h2>
+            <div class="form-group">
+                <label for="decryptInput">输入加密数据（Base64格式）：</label>
+                <textarea id="decryptInput" placeholder="请输入要解密的Base64字符串..."></textarea>
+            </div>
+            <button onclick="performDecrypt()">解密</button>
+            <button onclick="clearDecrypt()">清空</button>
+            <div id="decryptResult"></div>
+        </div>
+
+        <!-- 加密区域 -->
+        <div class="section">
+            <h2>🔒 加密功能</h2>
+            <div class="form-group">
+                <label for="encryptInput">输入要加密的JSON数据：</label>
+                <textarea id="encryptInput" placeholder='请输入JSON格式的数据，例如：{"topicId": "", "limit": 50, "page": 1}'>{"topicId": "", "limit": 50, "page": 1}</textarea>
+            </div>
+            <button onclick="performEncrypt()">加密</button>
+            <button onclick="clearEncrypt()">清空</button>
+            <button onclick="formatJson()">格式化JSON</button>
+            <div id="encryptResult"></div>
+        </div>
+
+        <!-- 常用示例 -->
+        <div class="section">
+            <h2>📝 常用示例</h2>
+            <button onclick="loadExample1()">示例1: 查询主题产品</button>
+            <button onclick="loadExample2()">示例2: 分页查询</button>
+            <button onclick="loadExample3()">示例3: 带ID查询</button>
+        </div>
+    </div>
+
+    <script>
+        // 预定义的AES密钥
+        const PREDEFINED_KEYS = {
+            health: '1b9ovDYH4Inl1N7fOcTBuigPOZ8JIwBv', // 小程序端密钥
+            test: 'fd23f538f25a87fb1f68e8835811d240'     // Web端密钥
+        };
+
+        // 当前使用的密钥
+        let currentAESKey = PREDEFINED_KEYS.health;
+
+        // localStorage键名
+        const STORAGE_KEYS = {
+            selectedKeyType: 'aes_tool_selected_key_type',
+            customKey: 'aes_tool_custom_key'
+        };
+
+        // 保存密钥选择到localStorage
+        function saveKeySelection(keyType, customKey = '') {
+            try {
+                localStorage.setItem(STORAGE_KEYS.selectedKeyType, keyType);
+                if (keyType === 'custom' && customKey) {
+                    localStorage.setItem(STORAGE_KEYS.customKey, customKey);
+                }
+                console.log('密钥选择已保存:', keyType, customKey ? '(含自定义密钥)' : '');
+            } catch (error) {
+                console.warn('保存密钥选择失败:', error);
+            }
+        }
+
+        // 从localStorage加载密钥选择
+        function loadKeySelection() {
+            try {
+                const savedKeyType = localStorage.getItem(STORAGE_KEYS.selectedKeyType);
+                const savedCustomKey = localStorage.getItem(STORAGE_KEYS.customKey);
+
+                if (savedKeyType && PREDEFINED_KEYS[savedKeyType]) {
+                    // 预定义密钥
+                    return {
+                        keyType: savedKeyType,
+                        customKey: null
+                    };
+                } else if (savedKeyType === 'custom' && savedCustomKey) {
+                    // 自定义密钥
+                    return {
+                        keyType: 'custom',
+                        customKey: savedCustomKey
+                    };
+                }
+
+                // 默认返回health密钥
+                return {
+                    keyType: 'health',
+                    customKey: null
+                };
+            } catch (error) {
+                console.warn('加载密钥选择失败:', error);
+                return {
+                    keyType: 'health',
+                    customKey: null
+                };
+            }
+        }
+
+        // AES加密函数（复制自项目实现）
+        function encryptAes(data, aesKey) {
+            if (aesKey && data) {
+                const key = CryptoJS.enc.Utf8.parse(aesKey);
+                const result = CryptoJS.AES.encrypt(data, key, {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7,
+                }).toString();
+                return result;
+            } else {
+                return data;
+            }
+        }
+
+        // AES解密函数（复制自项目实现）
+        function decrypt(encryptedBase64Str, aesKey) {
+            try {
+                const vals = CryptoJS.enc.Base64.parse(encryptedBase64Str);
+                const src = CryptoJS.enc.Base64.stringify(vals);
+                const options = {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7,
+                };
+                const key = CryptoJS.enc.Utf8.parse(aesKey);
+                const decryptedData = CryptoJS.AES.decrypt(src, key, options);
+                const decryptedStr = decryptedData.toString(CryptoJS.enc.Utf8);
+                return JSON.parse(decryptedStr);
+            } catch (error) {
+                console.error('解密失败:', error);
+                throw error;
+            }
+        }
+
+        // JSON语法高亮格式化函数
+        function formatJsonWithHighlight(obj) {
+            const json = JSON.stringify(obj, null, 4); // 使用4个空格缩进，更清晰
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        // 创建格式化的JSON显示
+        function createFormattedJsonDisplay(obj, title) {
+            const formattedJson = formatJsonWithHighlight(obj);
+            return `
+                <div class="result-section">
+                    <span class="result-label">${title}</span>
+                    <div class="json-formatted">${formattedJson}</div>
+                </div>
+            `;
+        }
+
+        // 密钥管理功能
+        function handleKeyChange() {
+            const select = document.getElementById('keySelect');
+            const customInput = document.getElementById('customKeyInput');
+            const keyInfo = document.getElementById('keyInfo');
+            const currentKeySpan = document.getElementById('currentKey');
+            const keyLengthSpan = document.getElementById('keyLength');
+
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                const customKey = document.getElementById('customKey').value;
+                currentAESKey = customKey || PREDEFINED_KEYS.health;
+                // 保存自定义密钥选择
+                saveKeySelection('custom', customKey);
+            } else {
+                customInput.style.display = 'none';
+                currentAESKey = PREDEFINED_KEYS[select.value];
+                // 保存预定义密钥选择
+                saveKeySelection(select.value);
+            }
+
+            currentKeySpan.textContent = currentAESKey;
+            keyLengthSpan.textContent = currentAESKey.length;
+
+            // 更新密钥信息的背景色
+            updateKeyInfoStyle();
+        }
+
+        // 监听自定义密钥输入
+        function setupCustomKeyListener() {
+            const customKeyInput = document.getElementById('customKey');
+            customKeyInput.addEventListener('input', function() {
+                if (document.getElementById('keySelect').value === 'custom') {
+                    currentAESKey = this.value || PREDEFINED_KEYS.health;
+                    document.getElementById('currentKey').textContent = currentAESKey;
+                    document.getElementById('keyLength').textContent = currentAESKey.length;
+
+                    // 保存自定义密钥
+                    saveKeySelection('custom', this.value);
+
+                    // 更新样式
+                    updateKeyInfoStyle();
+                }
+            });
+        }
+
+        // 更新密钥信息样式（从handleKeyChange中提取出来）
+        function updateKeyInfoStyle() {
+            const keyInfo = document.getElementById('keyInfo');
+            if (currentAESKey.length !== 32) {
+                keyInfo.style.backgroundColor = '#f8d7da';
+                keyInfo.style.borderColor = '#f5c6cb';
+                keyInfo.style.color = '#721c24';
+            } else {
+                keyInfo.style.backgroundColor = '#fff3cd';
+                keyInfo.style.borderColor = '#ffeaa7';
+                keyInfo.style.color = '#856404';
+            }
+        }
+
+        // 初始化密钥选择（从localStorage加载）
+        function initializeKeySelection() {
+            const savedSelection = loadKeySelection();
+            const select = document.getElementById('keySelect');
+            const customKeyInput = document.getElementById('customKey');
+            const customInputDiv = document.getElementById('customKeyInput');
+
+            // 设置选择框的值
+            select.value = savedSelection.keyType;
+
+            if (savedSelection.keyType === 'custom') {
+                // 显示自定义密钥输入框
+                customInputDiv.style.display = 'block';
+                if (savedSelection.customKey) {
+                    customKeyInput.value = savedSelection.customKey;
+                    currentAESKey = savedSelection.customKey;
+                } else {
+                    currentAESKey = PREDEFINED_KEYS.health;
+                }
+            } else {
+                // 隐藏自定义密钥输入框
+                customInputDiv.style.display = 'none';
+                currentAESKey = PREDEFINED_KEYS[savedSelection.keyType];
+            }
+
+            // 更新显示
+            document.getElementById('currentKey').textContent = currentAESKey;
+            document.getElementById('keyLength').textContent = currentAESKey.length;
+            updateKeyInfoStyle();
+
+            console.log('已加载保存的密钥选择:', savedSelection.keyType, savedSelection.customKey ? '(含自定义密钥)' : '');
+        }
+
+        // 测试当前密钥
+        function testCurrentKey() {
+            const testData = '{"test": "密钥测试", "timestamp": ' + Date.now() + '}';
+            try {
+                const encrypted = encryptAes(testData, currentAESKey);
+                const decrypted = decrypt(encrypted, currentAESKey);
+                alert('✅ 密钥测试成功！\n\n原始数据: ' + testData + '\n\n加密结果: ' + encrypted.substring(0, 50) + '...\n\n解密验证: ' + JSON.stringify(decrypted));
+            } catch (error) {
+                alert('❌ 密钥测试失败！\n\n错误信息: ' + error.message);
+            }
+        }
+
+        // 复制到剪贴板功能
+        function copyToClipboard(text, buttonElement) {
+            navigator.clipboard.writeText(text).then(function() {
+                const originalText = buttonElement.textContent;
+                buttonElement.textContent = '已复制!';
+                buttonElement.style.backgroundColor = '#28a745';
+                setTimeout(function() {
+                    buttonElement.textContent = originalText;
+                    buttonElement.style.backgroundColor = '#28a745';
+                }, 2000);
+            }).catch(function(err) {
+                alert('复制失败: ' + err);
+            });
+        }
+
+        // 执行解密
+        function performDecrypt() {
+            const input = document.getElementById('decryptInput').value.trim();
+            const resultDiv = document.getElementById('decryptResult');
+
+            if (!input) {
+                resultDiv.innerHTML = '<div class="error">请输入要解密的数据</div>';
+                return;
+            }
+
+            try {
+                const result = decrypt(input, currentAESKey);
+                const jsonString = JSON.stringify(result);
+                const prettyJsonString = JSON.stringify(result, null, 2);
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                            <strong style="font-size: 16px;">✅ 解密成功！</strong>
+                            <button class="copy-btn" onclick="copyToClipboard('${jsonString.replace(/'/g, "\\'")}', this)">复制紧凑JSON</button>
+                            <button class="copy-btn" onclick="copyToClipboard('${prettyJsonString.replace(/'/g, "\\'")}', this)">复制格式化JSON</button>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">🔑 使用密钥：</span>
+                            <span class="key-display">${currentAESKey}</span>
+                        </div>
+
+                        ${createFormattedJsonDisplay(result, '📋 解密结果（格式化显示）')}
+
+                        <div class="result-section">
+                            <span class="result-label">📝 原始JSON字符串：</span>
+                            <div class="result info" style="font-family: 'Consolas', 'Monaco', monospace; word-break: break-all; padding: 12px;">${jsonString}</div>
+                        </div>
+                    </div>
+                `;
+                console.log('解密结果:', result);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong style="font-size: 16px;">❌ 解密失败</strong><br><br>
+
+                        <div class="result-section">
+                            <span class="result-label">🔑 使用密钥：</span>
+                            <span class="key-display">${currentAESKey}</span>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">❗ 错误信息：</span>
+                            <div style="color: #721c24; font-weight: bold; margin-top: 5px;">${error.message}</div>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">💡 可能原因：</span>
+                            <ul style="margin: 8px 0; padding-left: 20px;">
+                                <li>输入的不是有效的Base64字符串</li>
+                                <li>数据不是使用相同密钥加密的</li>
+                                <li>加密模式不匹配</li>
+                                <li>密钥长度不正确（应为32位）</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                console.error('解密失败:', error);
+            }
+        }
+
+        // 执行加密
+        function performEncrypt() {
+            const input = document.getElementById('encryptInput').value.trim();
+            const resultDiv = document.getElementById('encryptResult');
+
+            if (!input) {
+                resultDiv.innerHTML = '<div class="error">请输入要加密的JSON数据</div>';
+                return;
+            }
+
+            try {
+                // 验证JSON格式
+                const jsonData = JSON.parse(input);
+                const jsonString = JSON.stringify(jsonData);
+
+                // 执行加密
+                const encrypted = encryptAes(jsonString, currentAESKey);
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                            <strong style="font-size: 16px;">✅ 加密成功！</strong>
+                            <button class="copy-btn" onclick="copyToClipboard('${encrypted}', this)">复制加密结果</button>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">🔑 使用密钥：</span>
+                            <span class="key-display">${currentAESKey}</span>
+                        </div>
+
+                        ${createFormattedJsonDisplay(jsonData, '📝 原始数据（格式化显示）')}
+
+                        <div class="result-section">
+                            <span class="result-label">🔒 加密结果：</span>
+                            <div class="result info" style="word-break: break-all; font-family: 'Consolas', 'Monaco', monospace; padding: 12px; line-height: 1.6;">${encrypted}</div>
+                        </div>
+                    </div>
+                `;
+                console.log('加密结果:', encrypted);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong style="font-size: 16px;">❌ 加密失败</strong><br><br>
+
+                        <div class="result-section">
+                            <span class="result-label">🔑 使用密钥：</span>
+                            <span class="key-display">${currentAESKey}</span>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">❗ 错误信息：</span>
+                            <div style="color: #721c24; font-weight: bold; margin-top: 5px;">${error.message}</div>
+                        </div>
+
+                        <div class="result-section">
+                            <span class="result-label">💡 可能原因：</span>
+                            <ul style="margin: 8px 0; padding-left: 20px;">
+                                <li>输入的不是有效的JSON格式</li>
+                                <li>JSON语法错误（缺少引号、逗号等）</li>
+                                <li>密钥长度不正确（应为32位）</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                console.error('加密失败:', error);
+            }
+        }
+
+        // 清空解密区域
+        function clearDecrypt() {
+            document.getElementById('decryptInput').value = '';
+            document.getElementById('decryptResult').innerHTML = '';
+        }
+
+        // 清空加密区域
+        function clearEncrypt() {
+            document.getElementById('encryptInput').value = '';
+            document.getElementById('encryptResult').innerHTML = '';
+        }
+
+        // 格式化JSON
+        function formatJson() {
+            const input = document.getElementById('encryptInput');
+            try {
+                const jsonData = JSON.parse(input.value);
+                input.value = JSON.stringify(jsonData, null, 2);
+            } catch (error) {
+                alert('JSON格式错误，无法格式化：' + error.message);
+            }
+        }
+
+        // 加载示例1：查询主题产品
+        function loadExample1() {
+            const example = {
+                "topicId": "",
+                "limit": 50,
+                "page": 1
+            };
+            document.getElementById('encryptInput').value = JSON.stringify(example, null, 2);
+        }
+
+        // 加载示例2：分页查询
+        function loadExample2() {
+            const example = {
+                "page": 1,
+                "limit": 20,
+                "validFlag": 1
+            };
+            document.getElementById('encryptInput').value = JSON.stringify(example, null, 2);
+        }
+
+        // 加载示例3：带ID查询
+        function loadExample3() {
+            const example = {
+                "topicId": "123",
+                "limit": 10,
+                "page": 1,
+                "validFlag": 1
+            };
+            document.getElementById('encryptInput').value = JSON.stringify(example, null, 2);
+        }
+
+        // 页面加载完成后的初始化
+        window.onload = function() {
+            // 设置自定义密钥输入监听
+            setupCustomKeyListener();
+
+            // 从localStorage加载保存的密钥选择
+            initializeKeySelection();
+
+            // 自动解密示例数据
+            performDecrypt();
+        };
+    </script>
+</body>
+</html>

@@ -1,9 +1,12 @@
-import {Button, Form, Input, message, Select, Switch, Table, TreeSelect} from 'antd';
+import {Button, Form, Input, message, Select, Switch, Table, TreeSelect, Tabs} from 'antd';
 import {useEffect, useState} from 'react';
 import {Http} from './util';
 import './App.css'
 import axios from "axios";
 import VueCode from "./VueCode.jsx";
+
+import EncryptDecrypt from './EncryptDecrypt.jsx';
+import CodeGenerator from './CodeGenerator.jsx';
 
 const App = () => {
     //模块
@@ -169,51 +172,14 @@ const App = () => {
             setRoleData(data)
         })
     }
-    function appendSuffix(arr) {
-        let newArr = [];
 
-        arr.forEach(item => {
-            for (let i = 1; i <= 4; i++) {
-                let suffix = i.toString().padStart(2, '0');  // ensures the suffix is two digits, like "01", "02", etc.
-                newArr.push(item + suffix);
-            }
-        });
 
-        return newArr;
-    }
-    const testData = [
-          "10241206000003", "10241206000004", "10241206000005",
-        "10241206000006", "10241206000007", "10241206000008", "10241206000009", "10241206000010",
-        "10241206000011", "10241206000012", "10241206000013", "10241206000014", "10241206000015",
-        "10241206000016", "10241206000017", "10241206000018", "10241206000019", "10241206000020",
-        "10241206000021", "10241206000022", "10241206000023", "10241206000024", "10241206000025",
-        "10241206000026", "10241206000027", "10241206000028", "10241206000029", "10241206000030",
-        "10241206000031", "10241206000032", "10241206000033", "10241206000034", "10241206000035",
-        "10241206000036", "10241206000037", "10241206000038", "10241206000039", "10241206000040",
-        "10241206000041", "10241206000042", "10241206000043", "10241206000044", "10241206000045",
-        "10241206000046", "10241206000047", "10241206000048", "10241206000049", "10241206000050",
-        "10241206000051", "10241206000052", "10241206000053", "10241206000054", "10241206000055",
-        "10241206000056", "10241206000057", "10241206000058"
-    ]
-    const login = async ()=>{
-       const config =  {
-            headers: {
-                'Content-Type': 'application/json',
-                    'Authorization': token
-            }
-        }
-        const realData = appendSuffix(testData)
-        console.log(realData,'real')
-        for await (const argument of realData) {
-            const {data} = await axios.post(baseUrl+'/lissortting/api/v1/sortting/querySpecimenByBarcode', {barcode:argument},config)
-            console.log(data,'ddd')
-             axios.post(baseUrl+'/lissortting/api/v1/sortting/addSorttingByApplicationOrderidBarcode',{applicationOrderId:data.applicationOrderId,barcode:argument},config)
-        }
-    }
+ 
     const [roleId,setRoleId] = useState('')
     //批量登记
     const handleSend = async () => {
         tableData.forEach((item) => {
+            console.log(item,'ddd')
             Http.post(baseUrl+'/admin/api/v1/operation/addOperation', {...item, pid}, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -222,8 +188,9 @@ const App = () => {
             }).then((res) => {
                 console.log(res,item)
                 message.success(item.urlperm + (res?.msg?res?.msg:res.data.msg))
+                console.log(roleId,'rrr')
                 if(!roleId) return
-               if(!res?.msg.includes('重复')){
+               // if(!res?.msg.includes('重复')){
                    Http.post(baseUrl+'/admin/api/v1/operation/queryAllOperationPageList', {page:1,limit:10,urlperm:item.urlperm,roleId}, {
                        headers: {
                            'Content-Type': 'application/json',
@@ -238,7 +205,7 @@ const App = () => {
                            }
                        })
                    })
-               }
+               // }
 
             })
         })
@@ -273,128 +240,179 @@ const App = () => {
         }
     },[isChecked])
     return (
-        <div>
-            <Form
-                name="basic"
-                labelCol={{span: 8}}
-                wrapperCol={{span: 16}}
-                initialValues={{remember: true}}
-                onFinish={onFinish}
-                autoComplete="off"
-                form={form}
-            >
-                <Form.Item
-                    label="模块"
-                    name="mode"
-                    rules={[{required: true, message: '请输入您的URL'}]}
-                >
-                    <Select onChange={handleModeChange} size="large" options={modeOptions}
-                            fieldNames={{label: 'name', value: 'name'}} key={'id'}/>
-                </Form.Item>
-                <Form.Item
-                    label="Tags"
-                    name="tags"
-                    rules={[{required: true, message: '请输入您的tag'}]}
-                >
-                    <Select
-                        onChange={handleTagChange}
-                        size="large"
-                        showSearch
-                        onSearch={handleSearch}
-                        allowClear={true}
-                        options={(optionsPath || []).map(d => ({
-                            value: d.tagName,
-                            label: d.tagName,
-                            other: d.options,
-                            key: d.tagName
-                        }))}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label="Url"
-                    name="url"
-                >
-                    <Input
-                        size="large"
-                    />
-                </Form.Item>
-                <Form.Item wrapperCol={{offset: 8, span: 16}}>
-                    <Button type="primary" htmlType="submit" style={{marginRight: '10px'}}>
-                        一键生成
-                    </Button>
-                    <Button type={'primary'} onClick={handleForm}>单个搜索</Button>
-                </Form.Item>
-            </Form>
-            <VueCode></VueCode>
-            <Button type={'primary'} onClick={handleHide}>显示隐藏</Button>
-            {flag && <div className={'box'}>
-                <div className={'inner'}>
-                    <Input.TextArea rows={30} value={apiStr}></Input.TextArea>
-                    <Button style={{margin: '10px'}} type="primary" onClick={() => handleCopy(apiStr)}>复制Api</Button>
-                </div>
-                <div className={'inner'}>
-                    <Input.TextArea rows={30} value={dtoStr}></Input.TextArea>
-                    <Button style={{margin: '10px'}} type="primary" onClick={() => handleCopy(dtoStr)}>复制Dto</Button>
-                </div>
-            </div>}
-            <div>
-                <div className={'flexCenter'}>
-                    <div className={'flexCenter'} style={{width: '300px', marginRight: '10px'}}>
-                        <div style={{marginRight: '10px'}}>token</div>
-                        <Input value={token} onChange={(e) => {
-                            localStorage.setItem('token', e.target.value)
-                            setToken(e.target.value)
-                        }}></Input>
-                    </div>
-                    <div className={'flexCenter'} style={{width: '300px', marginRight: '10px'}}>
-                        <div style={{marginRight: '10px'}}>PID</div>
-                       {/* <Input value={pid} onChange={(e) => {
-                            setPid(e.target.value)
-                        }}></Input>*/}
-                        <TreeSelect
-                            showSearch
-                            style={{ width: '100%' }}
-                            value={pid}
-                            dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-                            placeholder="Please select"
-                            allowClear
-                            treeDefaultExpandAll
-                            onChange={onChange}
-                            treeData={treeData}
-                            fieldNames={{
-                                label: 'name',
-                                value: 'id',
-                                children: 'children',
-                            }}
-                        />
-                    </div>
-                    <div>
-                        <Select
-                            size="large"
-                            showSearch
-                            placeholder='选择角色'
-                            onSearch={roleFilter}
-                            allowClear={true}
-                            style={{width:200}}
-                            onChange={handleRoleChange}
-                            options={(roleData || []).map(d => ({
-                                value: d.id,
-                                label: d.name,
+        <div className="container">
+            {/* 中文注释：顶层容器使用 decrypt 风格的白色卡片 */}
+            <h1 className="page-title">一键生成TS</h1>
 
-                                key: d.id
-                            }))}
-                        />
-                    </div>
-                    <div>
-                        {/*<Button onClick={login} type={'primary'}>登录</Button>*/}
-                        <span style={{marginRight:10}}>是否HTTPS</span>
-                        <Switch checked={isChecked} onChange={(e)=>setIsChecked(e)} ></Switch>
-                        <Button onClick={getTreeData}>获取PID树形数据</Button>
-                        <Button onClick={handleSend}>批量登记</Button></div>
-                </div>
+            {/* 中文注释：通过 Tabs 切换功能模块，“权限登记” 与 “加密/解密” */}
+            <Tabs
+                defaultActiveKey="perm"
+                items={[
+                    {
+                        key: 'perm',
+                        label: '权限登记',
+                        children: (
+                            <>
+                                {/* 中文注释：参数选择 独占一栏 */}
+                                <div className="section">
+                                    <h2 className="section-title">参数选择</h2>
+                                    <Form
+                                        name="basic"
+                                        labelCol={{span: 6}}
+                                        wrapperCol={{span: 18}}
+                                        initialValues={{remember: true}}
+                                        onFinish={onFinish}
+                                        autoComplete="off"
+                                        form={form}
+                                    >
+                                        <Form.Item
+                                            label="模块"
+                                            name="mode"
+                                            rules={[{required: true, message: '请输入您的URL'}]}
+                                        >
+                                            <Select onChange={handleModeChange} size="large" options={modeOptions}
+                                                    fieldNames={{label: 'name', value: 'name'}} key={'id'}/>
+                                        </Form.Item>
+                                        <Form.Item
+                                            label="Tags"
+                                            name="tags"
+                                            rules={[{required: true, message: '请输入您的tag'}]}
+                                        >
+                                            <Select
+                                                onChange={handleTagChange}
+                                                size="large"
+                                                showSearch
+                                                onSearch={handleSearch}
+                                                allowClear={true}
+                                                options={(optionsPath || []).map(d => ({
+                                                    value: d.tagName,
+                                                    label: d.tagName,
+                                                    other: d.options,
+                                                    key: d.tagName
+                                                }))}
+                                            />
+                                        </Form.Item>
+                                        <Form.Item
+                                            label="Url"
+                                            name="url"
+                                        >
+                                            <Input size="large" />
+                                        </Form.Item>
+                                        <Form.Item wrapperCol={{offset: 6, span: 18}}>
+                                            <Button type="primary" htmlType="submit" style={{marginRight: '10px'}}>
+                                                一键生成
+                                            </Button>
+                                            <Button type={'primary'} onClick={handleForm}>单个搜索</Button>
+                                        </Form.Item>
+                                    </Form>
+                                </div>
 
-                <Table columns={columns} dataSource={tableData} key={'urlperm'}/>
-            </div>
+                                {/* 中文注释：生成结果 独占一栏 */}
+                                <div className="section">
+                                    <h2 className="section-title">生成结果</h2>
+                                    <Button type={'primary'} onClick={handleHide} style={{marginBottom: 12}}>显示/隐藏</Button>
+                                    {flag && <div className={'box'}>
+                                        <div className={'inner'}>
+                                            <Input.TextArea rows={30} value={apiStr}></Input.TextArea>
+                                            <Button style={{margin: '10px'}} type="primary" onClick={() => handleCopy(apiStr)}>复制Api</Button>
+                                        </div>
+                                        <div className={'inner'}>
+                                            <Input.TextArea rows={30} value={dtoStr}></Input.TextArea>
+                                            <Button style={{margin: '10px'}} type="primary" onClick={() => handleCopy(dtoStr)}>复制Dto</Button>
+                                        </div>
+                                    </div>}
+                                </div>
+
+                                {/* 中文注释：系统配置与批量登记 独占一栏 */}
+                                <div className="section">
+                                    <h2 className="section-title">系统配置与批量登记</h2>
+                                    <div className={'action-bar'}>
+                                        <div className={'flexCenter'} style={{width: '300px'}}>
+                                            <div style={{marginRight: '10px'}}>token</div>
+                                            <Input value={token} onChange={(e) => {
+                                                localStorage.setItem('token', e.target.value)
+                                                setToken(e.target.value)
+                                            }}></Input>
+                                        </div>
+                                        <div className={'flexCenter'} style={{width: '300px'}}>
+                                            <div style={{marginRight: '10px'}}>PID</div>
+                                            {/* <Input value={pid} onChange={(e) => {
+                                                setPid(e.target.value)
+                                            }}></Input>*/}
+                                            <TreeSelect
+                                                showSearch
+                                                style={{ width: '100%' }}
+                                                value={pid}
+                                                dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                                                placeholder="Please select"
+                                                allowClear
+                                                treeDefaultExpandAll
+                                                onChange={onChange}
+                                                treeData={treeData}
+                                                fieldNames={{
+                                                    label: 'name',
+                                                    value: 'id',
+                                                    children: 'children',
+                                                }}
+                                            />
+                                        </div>
+                                        <Select
+                                            size="large"
+                                            showSearch
+                                            placeholder='选择角色'
+                                            onSearch={roleFilter}
+                                            allowClear={true}
+                                            style={{width:200}}
+                                            onChange={handleRoleChange}
+                                            options={(roleData || []).map(d => ({
+                                                value: d.id,
+                                                label: d.name,
+                                                key: d.id
+                                            }))}
+                                        />
+                                        <div className={'flexCenter'} style={{gap: 8}}>
+                                            {/*<Button onClick={login} type={'primary'}>登录</Button>*/}
+                                            <span style={{marginRight:10}}>是否HTTPS</span>
+                                            <Switch checked={isChecked} onChange={(e)=>setIsChecked(e)} ></Switch>
+                                            <Button onClick={getTreeData}>获取PID树形数据</Button>
+                                            <Button onClick={handleSend}>批量登记</Button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{marginTop: 12}}>
+                                        <Table columns={columns} dataSource={tableData} key={'urlperm'}/>
+                                    </div>
+                                </div>
+
+                                {/* 中文注释：Vue 代码生成 独占整栏，放置在页面最下方 */}
+                                <div className="section">
+                                    <h2 className="section-title">Vue代码生成</h2>
+                                    <VueCode></VueCode>
+                                </div>
+                            </>
+                        )
+                    },
+                    {
+                        key: 'enc',
+                        label: '加密/解密',
+                        children: (
+                            <div className="section" style={{padding:0, border:'none', background:'transparent'}}>
+                                <EncryptDecrypt />
+                            </div>
+                        )
+                    },
+                    {
+                        key: 'codegen',
+                        label: '码生成器',
+                        children: (
+                            <div className="section" style={{padding:0, border:'none', background:'transparent'}}>
+                                {/* 中文注释：二维码/条形码生成器 Tab 页面 */}
+                                <CodeGenerator />
+                            </div>
+                        )
+                    }
+                ]}
+            />
         </div>
     );
 };

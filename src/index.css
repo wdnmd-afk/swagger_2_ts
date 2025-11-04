@@ -1,3 +1,102 @@
+/* 全局样式：借鉴 decrypt.html 的浅灰背景 + 白色容器卡片风格，结合平滑过渡效果 */
+/* 中文注释：全局字体与背景设置，保证页面基调统一且干净 */
+/******** 修复横向滚动条：统一使用 border-box 并隐藏多余横向溢出 ********/
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+/* 中文注释：页面主容器，限制最大宽度为 80vw，白卡片 + 阴影 + 圆角 */
+.container {
+    width: 100%;
+    max-width: 80vw;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 28px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 中文注释：页面大标题 */
+.page-title {
+    text-align: center;
+    margin: 0 0 24px 0;
+    font-size: 24px;
+    color: #333;
+}
+
+/* 中文注释：分节卡片，微阴影 + 悬停轻浮动，提升层次感 */
+.section {
+    margin-bottom: 24px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fafafa;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.section:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+/* 中文注释：分节标题，蓝色下划线视觉锚点 */
+.section-title {
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #1677ff; /* AntD 品牌蓝 */
+    color: #555;
+    font-size: 18px;
+}
+
+/* 中文注释：响应式两列布局容器，>=1200px 两列平分，列间距 16px */
+.section-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+@media (min-width: 1200px) {
+    .section-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* 中文注释：卡片内部内容尽量宽一些（增加默认内边距与控件字号）*/
+.section .ant-form-item-label > label {
+    font-size: 14px;
+}
+.section .ant-input,
+.section .ant-select-selector,
+.section .ant-tree-select-selector,
+.section .ant-btn {
+    font-size: 14px;
+}
+.section {
+    padding: 24px; /* 稍微加大卡片内边距 */
+}
+
+
+/* 中文注释：AntD按钮与输入类控件统一过渡与圆角，保证交互的“平滑感” */
+.ant-btn {
+    transition: all 0.2s ease;
+}
+.ant-btn-primary:hover {
+    background-color: #1668dc !important;
+}
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-textarea,
+.ant-select-selector,
+.ant-tree-select-selector {
+    border-radius: 6px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 .box{
     display: flex;
     align-items: center;
@@ -9,4 +108,39 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+
+/* 中文注释：统一的操作区域，元素间距与换行控制 */
+.action-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 中文注释：表格风格优化，圆角与表头底色 */
+.ant-table-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.ant-table-thead > tr > th {
+    background-color: #f7f9fc !important;
+    color: #555;
+}
+.ant-table-tbody > tr:hover > td {
+    background-color: #fafcff !important;
+}
+
+/* 中文注释：代码文本域采用等宽字体，阅读体验更好 */
+.ant-input-textarea textarea {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.6;
+}
+
+/* 中文注释：覆盖原有高度，结果区容器更灵活自适应 */
+.box {
+    align-items: flex-start;
+    gap: 12px;
+    height: auto;
 }
