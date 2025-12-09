@@ -20,6 +20,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/prod-api/, '')
       },
+      "/test-api":{
+        target: 'http://192.168.218.202:9392',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/test-api/, '')
+      },
       '/https-api':{
         target: 'https://kdcloud.kangdulab.com',
         changeOrigin: true,

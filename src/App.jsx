@@ -1,14 +1,19 @@
-import {Button, Form, Input, message, Select, Switch, Table, TreeSelect, Tabs} from 'antd';
+import {Button, Form, Input, message, Select, Table, TreeSelect, Tabs} from 'antd';
 import {useEffect, useState} from 'react';
 import {Http} from './util';
 import './App.css'
 import axios from "axios";
 import VueCode from "./VueCode.jsx";
-
 import EncryptDecrypt from './EncryptDecrypt.jsx';
 import CodeGenerator from './CodeGenerator.jsx';
+import SharedConfig from './SharedConfig.jsx';
+import MenuConfig from './MenuConfig.jsx';
+import { useGlobalContext } from './GlobalContext.jsx';
 
 const App = () => {
+    // 使用全局状态
+    const { token, roleId, baseUrl } = useGlobalContext();
+    
     //模块
     const [modeOptions, setModeOptions] = useState([]);
     //模块路径
@@ -17,9 +22,6 @@ const App = () => {
     const [apiStr, setApiStr] = useState('');
     const [dtoStr, setDtoStr] = useState('');
     const [tableData, setTableData] = useState([]);
-    const [isChecked, setIsChecked] = useState(false);
-    const [isGive, setGive] = useState(false);
-    const [baseUrl, setBaseUrl] = useState('/prod-api');
     const handleDelete = (row) => {
         console.log(row)
         setTableData(tableData.filter(item => item.urlperm !== row.urlperm))
@@ -79,11 +81,6 @@ const App = () => {
             const {data} = await Http.get('/api/list');
             setModeOptions(data.data.urls);
         };
-        const token = localStorage.getItem('token')
-        if(token){
-            setToken(token)
-        }
-
         initPage();
     }, []);
 
@@ -131,17 +128,10 @@ const App = () => {
     useEffect(() => {
         console.log(optionsPath)
     }, [optionsPath]);
-    const roleFilter = (newVal) => {
-        return roleData.filter((d)=>{
-            return d.name.includes(newVal)
-        });
-
-    }
     const [flag, setFlag] = useState(true)
     const handleHide = () => {
         setFlag(!flag)
     }
-    const [token, setToken] = useState('')
     const [pid, setPid] = useState('')
     const findItemInArray = (arr, url) => {
         const res = []
@@ -159,23 +149,32 @@ const App = () => {
     }
     const [roleData, setRoleData] = useState([])
     const [treeData, setTreeData] = useState([])
-    const getTreeData = async ()=>{
-        Http.post(baseUrl+'/admin/api/v1/operation/getAllOperationTree', {resourceType:2,name:'',urlperm:''}, {
-
-        }).then(({data}) => {
-            console.log(data,'ddd')
-            setTreeData(data)
-        })
+    
+    // 获取角色列表
+    const getRoleData = async () => {
         Http.post(baseUrl+'/admin/api/v1/role/queryRolePageList', {limit:200,page:1}, {
-
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            }
         }).then(({data}) => {
             setRoleData(data)
         })
     }
-
-
- 
-    const [roleId,setRoleId] = useState('')
+    
+    const getTreeData = async ()=>{
+        Http.post(baseUrl+'/admin/api/v1/operation/getAllOperationTree', {resourceType:2,name:'',urlperm:''}, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            }
+        }).then(({data}) => {
+            console.log(data,'ddd')
+            setTreeData(data)
+        })
+        // 同时获取角色数据
+        getRoleData()
+    }
     //批量登记
     const handleSend = async () => {
         tableData.forEach((item) => {
@@ -224,21 +223,6 @@ const App = () => {
     const onChange = (newValue) => {
         setPid(newValue);
     };
-    const handleRoleChange = (data)=>{
-        console.log(data,'ddd')
-        setRoleId(data)
-    }
-    useEffect(()=>{
-        console.log(isChecked,'check')
-        if(isChecked){
-            localStorage.setItem('isHttps','1')
-            setBaseUrl('/https-api')
-        }else {
-            setBaseUrl('/prod-api')
-            localStorage.removeItem('isHttps')
-
-        }
-    },[isChecked])
     return (
         <div className="container">
             {/* 中文注释：顶层容器使用 decrypt 风格的白色卡片 */}
@@ -323,22 +307,21 @@ const App = () => {
                                     </div>}
                                 </div>
 
-                                {/* 中文注释：系统配置与批量登记 独占一栏 */}
+                                {/* 中文注释:系统配置与批量登记 独占一栏 */}
                                 <div className="section">
                                     <h2 className="section-title">系统配置与批量登记</h2>
-                                    <div className={'action-bar'}>
-                                        <div className={'flexCenter'} style={{width: '300px'}}>
-                                            <div style={{marginRight: '10px'}}>token</div>
-                                            <Input value={token} onChange={(e) => {
-                                                localStorage.setItem('token', e.target.value)
-                                                setToken(e.target.value)
-                                            }}></Input>
-                                        </div>
+                                    
+                                    {/* 共享配置组件 */}
+                                    <SharedConfig 
+                                        roleData={roleData} 
+                                        treeData={treeData} 
+                                        onGetTreeData={getTreeData}
+                                        onRefreshRoles={getRoleData}
+                                    />
+                                    
+                                    <div className={'action-bar'} style={{marginTop: 12}}>
                                         <div className={'flexCenter'} style={{width: '300px'}}>
                                             <div style={{marginRight: '10px'}}>PID</div>
-                                            {/* <Input value={pid} onChange={(e) => {
-                                                setPid(e.target.value)
-                                            }}></Input>*/}
                                             <TreeSelect
                                                 showSearch
                                                 style={{ width: '100%' }}
@@ -356,32 +339,18 @@ const App = () => {
                                                 }}
                                             />
                                         </div>
-                                        <Select
-                                            size="large"
-                                            showSearch
-                                            placeholder='选择角色'
-                                            onSearch={roleFilter}
-                                            allowClear={true}
-                                            style={{width:200}}
-                                            onChange={handleRoleChange}
-                                            options={(roleData || []).map(d => ({
-                                                value: d.id,
-                                                label: d.name,
-                                                key: d.id
-                                            }))}
-                                        />
-                                        <div className={'flexCenter'} style={{gap: 8}}>
-                                            {/*<Button onClick={login} type={'primary'}>登录</Button>*/}
-                                            <span style={{marginRight:10}}>是否HTTPS</span>
-                                            <Switch checked={isChecked} onChange={(e)=>setIsChecked(e)} ></Switch>
-                                            <Button onClick={getTreeData}>获取PID树形数据</Button>
-                                            <Button onClick={handleSend}>批量登记</Button>
-                                        </div>
+                                        <Button onClick={handleSend}>批量登记</Button>
                                     </div>
 
                                     <div style={{marginTop: 12}}>
                                         <Table columns={columns} dataSource={tableData} key={'urlperm'}/>
                                     </div>
+                                </div>
+
+                                {/* 中文注释:系统菜单配置 独占一栏 */}
+                                <div className="section">
+                                    <h2 className="section-title">系统菜单配置</h2>
+                                    <MenuConfig />
                                 </div>
 
                                 {/* 中文注释：Vue 代码生成 独占整栏，放置在页面最下方 */}
