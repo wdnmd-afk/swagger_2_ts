@@ -15,14 +15,22 @@ export const GlobalProvider = ({ children }) => {
         return localStorage.getItem('roleId') || '';
     });
 
-    // 是否使用HTTPS状态管理
-    const [isHttps, setIsHttps] = useState(() => {
-        return localStorage.getItem('isHttps') === '1';
+    // API环境状态管理 ('202' | '203' | '公网')
+    const [apiEnvironment, setApiEnvironment] = useState(() => {
+        // 读取环境配置，默认使用 203 环境
+        return localStorage.getItem('apiEnvironment') || '203';
     });
 
-    // baseUrl根据isHttps动态计算
+    // baseUrl根据apiEnvironment动态计算
     const [baseUrl, setBaseUrl] = useState(() => {
-        return localStorage.getItem('isHttps') === '1' ? '/https-api' : '/prod-api';
+        const savedEnv = localStorage.getItem('apiEnvironment') || '203';
+        // 根据环境映射到对应的代理路径
+        const envMap = {
+            '202': '/test-api',
+            '203': '/prod-api',
+            '公网': '/https-api'
+        };
+        return envMap[savedEnv] || '/prod-api';
     });
 
     // token变化时同步到localStorage
@@ -43,16 +51,22 @@ export const GlobalProvider = ({ children }) => {
         }
     }, [roleId]);
 
-    // isHttps变化时同步到localStorage和baseUrl
+    // apiEnvironment变化时同步到localStorage、baseUrl和isHttps
     useEffect(() => {
-        if (isHttps) {
-            localStorage.setItem('isHttps', '1');
-            setBaseUrl('/https-api');
-        } else {
-            localStorage.removeItem('isHttps');
-            setBaseUrl('/prod-api');
-        }
-    }, [isHttps]);
+        // 保存环境配置到 localStorage
+        localStorage.setItem('apiEnvironment', apiEnvironment);
+        
+        // 根据环境设置 isHttps：公网环境为 1，其他环境为 0
+        localStorage.setItem('isHttps', apiEnvironment === '公网' ? '1' : '0');
+        
+        // 根据环境映射到对应的代理路径
+        const envMap = {
+            '202': '/test-api',
+            '203': '/prod-api',
+            '公网': '/https-api'
+        };
+        setBaseUrl(envMap[apiEnvironment] || '/prod-api');
+    }, [apiEnvironment]);
 
     // 提供的全局状态和方法
     const value = {
@@ -60,8 +74,8 @@ export const GlobalProvider = ({ children }) => {
         setToken,
         roleId,
         setRoleId,
-        isHttps,
-        setIsHttps,
+        apiEnvironment,
+        setApiEnvironment,
         baseUrl,
     };
 

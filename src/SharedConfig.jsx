@@ -1,9 +1,9 @@
-import { Input, Switch, Select, Button } from 'antd';
+import { Input, Select, Button } from 'antd';
 import { useGlobalContext } from './GlobalContext';
 
-// 共享配置组件 - 包含token、角色选择、Https开关
+// 共享配置组件 - 包含token、角色选择、API环境选择
 const SharedConfig = ({ roleData, onGetTreeData, onRefreshRoles }) => {
-    const { token, setToken, roleId, setRoleId, isHttps, setIsHttps } = useGlobalContext();
+    const { token, setToken, roleId, setRoleId, apiEnvironment, setApiEnvironment } = useGlobalContext();
 
     // 角色下拉过滤
     const roleFilter = (newVal) => {
@@ -52,10 +52,19 @@ const SharedConfig = ({ roleData, onGetTreeData, onRefreshRoles }) => {
                 )}
             </div>
 
-            {/* Https开关 */}
+            {/* API环境选择 */}
             <div className={'flexCenter'} style={{ gap: 8 }}>
-                <span style={{ marginRight: 10 }}>是否HTTPS</span>
-                <Switch checked={isHttps} onChange={(e) => setIsHttps(e)} />
+                <span style={{ marginRight: 10 }}>API环境</span>
+                <Select
+                    value={apiEnvironment}
+                    onChange={setApiEnvironment}
+                    style={{ width: 120 }}
+                    options={[
+                        { value: '202', label: '202' },
+                        { value: '203', label: '203' },
+                        { value: '公网', label: '公网' }
+                    ]}
+                />
             </div>
 
             {/* 获取树形数据按钮 */}

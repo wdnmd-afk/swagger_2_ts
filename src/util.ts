@@ -75,7 +75,7 @@ function resResolve(response) {
   const { code, requestid, msg, access_token } = response.data;
   if (code == "00000") {
     const isHttps = localStorage.getItem("isHttps");
-    if (isHttps) {
+    if (isHttps === '1') {
       response.data.data = decrypt(response.data.data, aesKey);
     }
     return response.data;

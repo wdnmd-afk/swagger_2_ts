@@ -25,6 +25,7 @@ const interfaceMap = {
     "kangdd-business-3pl": "3pl",
     "kangdd-business-survey": "survey",
     "kangdulab-business-lis-qc": "lisqc",
+    "kangdulab-business-lis-quality-control": "lisQualityControl",
 
 }
 
